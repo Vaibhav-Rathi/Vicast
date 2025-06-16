@@ -1,0 +1,13 @@
+-- CreateTable
+CREATE TABLE "Sdp" (
+    "id" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "sdp" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+
+    CONSTRAINT "Sdp_pkey" PRIMARY KEY ("id")
+);
+
+-- AddForeignKey
+ALTER TABLE "Sdp" ADD CONSTRAINT "Sdp_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

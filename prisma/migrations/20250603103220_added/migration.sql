@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Podcast" ADD COLUMN     "name" TEXT NOT NULL DEFAULT 'NO NAME';
