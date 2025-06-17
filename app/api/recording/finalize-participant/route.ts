@@ -5,12 +5,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[START] Handling POST /api/recording/finalize-participant');
 
     const body = await request.json();
     const { sessionId, participantId } = body;
 
-    console.log('[REQUEST BODY]', body);
 
     if (!sessionId || !participantId) {
       return NextResponse.json(
@@ -25,7 +23,6 @@ export async function POST(request: NextRequest) {
       data: { leftAt: new Date() }
     });
 
-    console.log('[UPDATED] Participant finalized:', participant);
 
     // Get total chunks for this participant
     const chunkCount = await prisma.recordingChunk.count({
@@ -35,7 +32,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log(`[CHUNKS] Participant ${participantId} has ${chunkCount} chunks`);
 
     return NextResponse.json({
       success: true,

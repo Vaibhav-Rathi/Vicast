@@ -6,7 +6,6 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 export async function POST(request: NextRequest) {
-  console.log('=== VOICE ENHANCEMENT API STARTED ===');
   
   let inputPath: string | null = null;
   let outputPath: string | null = null;
@@ -17,23 +16,12 @@ export async function POST(request: NextRequest) {
     const enhancementLevel = formData.get('enhancement_level') || 'medium'; // low, medium, high
     const voiceType = formData.get('voice_type') || 'speech'; // speech, singing, podcast
     
-    console.log('Received request:', {
-      hasAudioFile: !!audioFile,
-      audioFileName: audioFile?.name,
-      audioFileSize: audioFile?.size,
-      audioFileType: audioFile?.type,
-      enhancementLevel: enhancementLevel,
-      voiceType: voiceType
-    });
-    
     if (!audioFile) {
-      console.error('No audio file provided in request');
       return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
     }
     
     // Validate file type
     if (!audioFile.type.startsWith('audio/') && !audioFile.type.startsWith('video/')) {
-      console.error('Invalid file type:', audioFile.type);
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
     }
     
@@ -41,44 +29,23 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await audioFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
-    console.log('Audio buffer created:', {
-      bufferSize: buffer.length,
-      bufferType: buffer.constructor.name
-    });
-    
+       
     // Create temporary files
     const timestamp = Date.now();
     inputPath = join(tmpdir(), `input_${timestamp}.webm`);
     outputPath = join(tmpdir(), `enhanced_${timestamp}.wav`);
     
-    console.log('Temp file paths:', {
-      inputPath,
-      outputPath,
-      tmpdir: tmpdir()
-    });
-    
-    // Write input file
+       // Write input file
     writeFileSync(inputPath, buffer);
-    console.log('Input file written successfully, size:', buffer.length);
     
     // Method 1: Using FFmpeg with voice enhancement filters
-    console.log('Starting FFmpeg enhancement...');
     const enhancedAudio = await enhanceWithFFmpeg(inputPath, outputPath, enhancementLevel as any, voiceType as any);
     
     if (enhancedAudio) {
-      console.log('FFmpeg enhancement successful:', {
-        outputSize: enhancedAudio.length,
-        outputType: enhancedAudio.constructor.name
-      });
-      
-      // Log first few bytes to check if it's valid audio data
-      console.log('First 10 bytes of output:', Array.from(enhancedAudio.slice(0, 10)));
-      
       // Check if client wants base64 response
       const wantsBase64 = request.headers.get('X-Response-Format') === 'base64';
       
       if (wantsBase64) {
-        console.log('Returning base64 encoded response');
         // Return as base64 JSON
         const base64Audio = enhancedAudio.toString('base64');
         return NextResponse.json({
@@ -106,17 +73,11 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    console.log('FFmpeg enhancement failed, trying SoX...');
     
     // Method 2: Fallback to SoX enhancement
     try {
       const soxEnhanced = await enhanceWithSoX(inputPath, outputPath, enhancementLevel as any, voiceType as any);
       if (soxEnhanced) {
-        console.log('SoX enhancement successful:', {
-          outputSize: soxEnhanced.length,
-          outputType: soxEnhanced.constructor.name
-        });
-        
         // Check if client wants base64 response
         const wantsBase64 = request.headers.get('X-Response-Format') === 'base64';
         
@@ -143,17 +104,11 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (soxError) {
-      console.error('SoX enhancement failed:', soxError);
+      // SoX enhancement failed, continue to basic fallback
     }
     
     // Method 3: Basic voice enhancement fallback
-    console.log('Both FFmpeg and SoX failed, using basic fallback...');
     const basicEnhanced = await basicVoiceEnhancement(buffer, enhancementLevel as any, voiceType as any);
-    
-    console.log('Basic enhancement result:', {
-      outputSize: basicEnhanced.length,
-      outputType: basicEnhanced.constructor.name
-    });
     
     // Check if client wants base64 response
     const wantsBase64 = request.headers.get('X-Response-Format') === 'base64';
@@ -181,31 +136,22 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('=== VOICE ENHANCEMENT ERROR ===');
-    console.error('Error type:', error?.constructor?.name);
-    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    
     return NextResponse.json({ 
       error: 'Failed to enhance voice',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   } finally {
     // Clean up temporary files
-    console.log('Cleaning up temporary files...');
     try {
       if (inputPath) {
         unlinkSync(inputPath);
-        console.log('Deleted input file:', inputPath);
       }
       if (outputPath) {
         unlinkSync(outputPath);
-        console.log('Deleted output file:', outputPath);
       }
     } catch (cleanupError) {
-      console.error('Cleanup error:', cleanupError);
+      // Cleanup error ignored
     }
-    console.log('=== VOICE ENHANCEMENT API COMPLETED ===\n');
   }
 }
 
@@ -216,28 +162,17 @@ async function enhanceWithFFmpeg(
   voiceType: string
 ): Promise<Buffer | null> {
   return new Promise((resolve) => {
-    console.log('FFmpeg: Starting with parameters:', {
-      inputPath,
-      outputPath,
-      enhancementLevel,
-      voiceType
-    });
-    
     // Check if ffmpeg is available
     const testFFmpeg = spawn('ffmpeg', ['-version']);
     testFFmpeg.on('error', (error) => {
-      console.error('FFmpeg not found:', error.message);
       resolve(null);
     });
     
     testFFmpeg.on('close', (code) => {
       if (code !== 0) {
-        console.error('FFmpeg test failed with code:', code);
         resolve(null);
         return;
       }
-      
-      console.log('FFmpeg is available, proceeding with enhancement...');
       
       // Configure FFmpeg filters based on enhancement level and voice type
       let filterComplex: string;
@@ -294,8 +229,6 @@ async function enhanceWithFFmpeg(
       // Combine all filters
       filterComplex = [...baseFilters, ...enhancementFilters].join(',');
       
-      console.log('FFmpeg filter complex:', filterComplex);
-      
       const ffmpegArgs = [
         '-i', inputPath,
         '-af', filterComplex,
@@ -305,8 +238,6 @@ async function enhanceWithFFmpeg(
         '-y', // Overwrite output file
         outputPath
       ];
-      
-      console.log('FFmpeg command:', 'ffmpeg', ffmpegArgs.join(' '));
       
       const ffmpeg = spawn('ffmpeg', ffmpegArgs);
       
@@ -319,39 +250,22 @@ async function enhanceWithFFmpeg(
       
       ffmpeg.stderr.on('data', (data) => {
         stderr += data.toString();
-        // Log FFmpeg progress
-        const progressMatch = data.toString().match(/time=(\d+:\d+:\d+\.\d+)/);
-        if (progressMatch) {
-          console.log('FFmpeg progress:', progressMatch[1]);
-        }
       });
       
       ffmpeg.on('close', (code) => {
-        console.log('FFmpeg process exited with code:', code);
-        
         if (code === 0) {
-          console.log('FFmpeg completed successfully');
           try {
             const outputBuffer = readFileSync(outputPath);
-            console.log('FFmpeg output file read successfully:', {
-              size: outputBuffer.length,
-              firstBytes: Array.from(outputBuffer.slice(0, 10))
-            });
             resolve(outputBuffer);
           } catch (readError) {
-            console.error('Error reading FFmpeg output:', readError);
             resolve(null);
           }
         } else {
-          console.error('FFmpeg failed with code:', code);
-          console.error('FFmpeg stderr:', stderr);
-          console.error('FFmpeg stdout:', stdout);
           resolve(null);
         }
       });
       
       ffmpeg.on('error', (error) => {
-        console.error('FFmpeg spawn error:', error);
         resolve(null);
       });
     });
@@ -365,13 +279,6 @@ async function enhanceWithSoX(
   voiceType: string
 ): Promise<Buffer | null> {
   return new Promise((resolve) => {
-    console.log('SoX: Starting with parameters:', {
-      inputPath,
-      outputPath,
-      enhancementLevel,
-      voiceType
-    });
-    
     // SoX command for voice enhancement
     let soxArgs: string[] = [inputPath, outputPath];
     
@@ -410,8 +317,6 @@ async function enhanceWithSoX(
         soxArgs.push('equalizer', '1500', '300', '2'); // Speech intelligibility
     }
     
-    console.log('SoX command:', 'sox', soxArgs.join(' '));
-    
     const sox = spawn('sox', soxArgs);
     
     let stderr = '';
@@ -421,30 +326,19 @@ async function enhanceWithSoX(
     });
     
     sox.on('close', (code) => {
-      console.log('SoX process exited with code:', code);
-      
       if (code === 0) {
-        console.log('SoX completed successfully');
         try {
           const outputBuffer = readFileSync(outputPath);
-          console.log('SoX output file read successfully:', {
-            size: outputBuffer.length,
-            firstBytes: Array.from(outputBuffer.slice(0, 10))
-          });
           resolve(outputBuffer);
         } catch (readError) {
-          console.error('Error reading SoX output:', readError);
           resolve(null);
         }
       } else {
-        console.error('SoX failed with code:', code);
-        console.error('SoX stderr:', stderr);
         resolve(null);
       }
     });
     
     sox.on('error', (error) => {
-      console.error('SoX spawn error:', error);
       resolve(null);
     });
   });
@@ -455,12 +349,6 @@ async function basicVoiceEnhancement(
   enhancementLevel: string, 
   voiceType: string
 ): Promise<Buffer> {
-  console.log('Basic voice enhancement: Starting with parameters:', {
-    inputSize: inputBuffer.length,
-    enhancementLevel,
-    voiceType
-  });
-  
   // Basic voice enhancement using digital signal processing concepts
   const sampleRate = 44100;
   const numChannels = 2;
@@ -532,11 +420,6 @@ async function basicVoiceEnhancement(
   for (let i = 0; i < enhancedData.length; i++) {
     dataView.setInt16(i * bytesPerSample, enhancedData[i], true); // true for little-endian
   }
-  
-  console.log('Basic voice enhancement completed:', {
-    outputSize: wavBuffer.byteLength,
-    firstBytes: Array.from(wavView.slice(0, 10))
-  });
   
   return Buffer.from(wavBuffer);
 }

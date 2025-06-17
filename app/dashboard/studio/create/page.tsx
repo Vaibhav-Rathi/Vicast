@@ -182,7 +182,6 @@ class RecordingManager {
       const duration = Math.round((currentTime - this.chunkStartTime) / 1000); // Convert to seconds
       this.lastChunkTime = currentTime;
 
-      console.log(`Uploading chunk ${this.chunkNumber} with duration: ${duration}s`);
 
       // Create FormData for upload
       const formData = new FormData();
@@ -206,7 +205,6 @@ class RecordingManager {
 
       if ((response.data as any).success) {
         this.onStatusChange(`Chunk ${this.chunkNumber} uploaded successfully`);
-        console.log(`Chunk ${this.chunkNumber} uploaded:`, response.data);
       } else {
         throw new Error('Upload failed');
       }
@@ -832,7 +830,6 @@ export default function CreatePodcastPage() {
 
   // Recording handler - only for creators
   const handleRecordingChange = async (isRecording: boolean) => {
-    console.log('Recording state changed:', isRecording);
     // The actual recording logic is now handled in the RecordingManager class
   };
 

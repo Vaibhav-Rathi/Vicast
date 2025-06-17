@@ -156,7 +156,6 @@ export async function removeNoiseWithAI(
   noiseLevel: 'low' | 'medium' | 'high' = 'medium',
   useBase64: boolean = true // Default to base64 for reliability
 ): Promise<Blob> {
-  console.log('Starting noise removal with level:', noiseLevel, 'useBase64:', useBase64);
   
   try {
     // Validate input
@@ -171,7 +170,6 @@ export async function removeNoiseWithAI(
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
     const url = `${baseUrl}/api/ai/noise-removal`;
     
-    console.log('Sending request to:', url);
     
     const headers: HeadersInit = {
       'Accept': 'audio/wav, audio/*, application/octet-stream'
@@ -196,12 +194,6 @@ export async function removeNoiseWithAI(
       
       clearTimeout(timeoutId);
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', {
-        contentType: response.headers.get('content-type'),
-        contentLength: response.headers.get('content-length')
-      });
-      
       // Check if response is ok
       if (!response.ok) {
         const errorText = await response.text();
@@ -218,14 +210,7 @@ export async function removeNoiseWithAI(
       if (useBase64) {
         // Handle base64 response
         const data = await response.json();
-        
-        console.log('Received base64 response:', {
-          success: data.success,
-          audioLength: data.audio ? data.audio.length : 0,
-          size: data.size,
-          firstBytes: data.firstBytes
-        });
-        
+              
         if (!data.success || !data.audio) {
           throw new Error('Invalid response from server');
         }
@@ -248,26 +233,15 @@ export async function removeNoiseWithAI(
         
         const processedBlob = new Blob([bytes], { type: data.mimeType || 'audio/wav' });
         
-        console.log('Created blob from base64:', {
-          size: processedBlob.size,
-          type: processedBlob.type
-        });
-        
         // Test audio playback
         const testUrl = URL.createObjectURL(processedBlob);
-        console.log('Test audio URL:', testUrl);
         
         return processedBlob;
         
       } else {
         // Handle binary response
         const arrayBuffer = await response.arrayBuffer();
-        
-        console.log('Received arrayBuffer:', {
-          byteLength: arrayBuffer.byteLength,
-          firstBytes: Array.from(new Uint8Array(arrayBuffer).slice(0, 10))
-        });
-        
+            
         // Validate the response
         if (!arrayBuffer || arrayBuffer.byteLength === 0) {
           throw new Error('Server returned empty audio file');
@@ -285,13 +259,7 @@ export async function removeNoiseWithAI(
         
         // Create blob from arrayBuffer
         const processedBlob = new Blob([arrayBuffer], { type: 'audio/wav' });
-        
-        console.log('Created blob:', {
-          size: processedBlob.size,
-          type: processedBlob.type
-        });
-        
-        console.log('Noise removal completed successfully');
+              
         return processedBlob;
       }
       

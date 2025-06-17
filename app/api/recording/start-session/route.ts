@@ -6,12 +6,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[START] Handling POST /api/recording/start-session');
 
     const body = await request.json();
     const { roomName, sessionKey, userId, username } = body;
 
-    console.log('[REQUEST BODY]', body);
 
     // Check if session already exists
     let session = await prisma.recordingSession.findUnique({
@@ -19,10 +17,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (session) {
-      console.log(`[FOUND] Existing session for key: ${sessionKey}`, session);
     } else {
       // Create new session
-      console.log(`[CREATE] No existing session found. Creating new session with key: ${sessionKey}`);
       session = await prisma.recordingSession.create({
         data: {
           roomName,
@@ -30,11 +26,9 @@ export async function POST(request: NextRequest) {
           createdBy: userId,
         }
       });
-      console.log('[CREATED] New session:', session);
     }
 
     // Add participant to session
-    console.log(`[UPSERT] Adding/updating participant: ${userId} (${username}) in session ${session.id}`);
     const participant = await prisma.sessionParticipant.upsert({
       where: {
         sessionId_userId: {
@@ -53,9 +47,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('[PARTICIPANT]', participant);
 
-    console.log('[SUCCESS] Session and participant handled successfully');
 
     return NextResponse.json({
       success: true,

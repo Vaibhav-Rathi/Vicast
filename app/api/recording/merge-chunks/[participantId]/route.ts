@@ -212,12 +212,10 @@ export async function GET(
       // Create temp directory
       await fs.mkdir(tempDir, { recursive: true });
       
-      console.log(`Starting merge for participant ${params.participantId} with ${chunks.length} chunks`);
       
       // Download all chunks
       const chunkPaths: string[] = [];
       for (const chunk of chunks) {
-        console.log(`Downloading chunk ${chunk.chunkNumber}...`);
         const buffer = await downloadS3Object(chunk.s3Bucket, chunk.s3Key);
         const chunkPath = path.join(tempDir, `chunk-${chunk.chunkNumber.toString().padStart(4, '0')}.webm`);
         await fs.writeFile(chunkPath, buffer);
@@ -234,13 +232,11 @@ export async function GET(
       let mergedBuffer: Buffer;
       
       if (ffmpegAvailable) {
-        console.log('Using FFmpeg to merge chunks...');
         // Use FFmpeg for proper merging
         const outputPath = path.join(tempDir, 'merged.webm');
         await mergeWebMWithFFmpeg(chunkPaths, outputPath);
         mergedBuffer = await fs.readFile(outputPath);
       } else {
-        console.log('FFmpeg not available, using simple concatenation...');
         // Fallback to simple concatenation
         const chunkBuffers = await Promise.all(
           chunkPaths.map(path => fs.readFile(path))

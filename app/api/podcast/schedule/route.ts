@@ -198,13 +198,9 @@ export async function GET(request: NextRequest) {
 
 // DELETE method to delete a schedule
 export async function DELETE(request: NextRequest) {
-  console.log('[DELETE /api/podcast/schedule] Incoming request...');
-
   try {
     const body = await request.json();
     const { token, scheduleId } = body;
-
-    console.log('[DEBUG] Received token and scheduleId:', { token: !!token, scheduleId });
 
     if (!token || !scheduleId) {
       console.warn('[WARN] Missing token or scheduleId');
@@ -218,7 +214,6 @@ export async function DELETE(request: NextRequest) {
     let decodedToken: any;
     try {
       decodedToken = jwt.verify(token, process.env.JWT_SECRET!);
-      console.log('[DEBUG] Decoded token payload:', decodedToken);
     } catch (error) {
       console.error('[ERROR] Invalid token:', error);
       return NextResponse.json(
@@ -228,7 +223,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     const userEmail = decodedToken.email;
-    console.log('[DEBUG] Extracted email from token:', userEmail);
 
     if (!userEmail) {
       return NextResponse.json(
@@ -250,10 +244,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    console.log('[DEBUG] Found user:', {
-      id: user.id,
-      name: user.firstName + ' ' + user.lastName
-    });
 
     // Check if the schedule exists and belongs to the user
     const schedule = await prisma.schedule.findUnique({
@@ -290,18 +280,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    console.log('[DEBUG] Deleting schedule:', {
-      scheduleId,
-      title: schedule.title,
-      createdBy: schedule.createdBy.firstName + ' ' + schedule.createdBy.lastName
-    });
-
     // Delete the schedule
     await prisma.schedule.delete({
       where: { id: scheduleId }
     });
 
-    console.log('[SUCCESS] Schedule deleted successfully');
 
     return NextResponse.json(
       {
@@ -319,6 +302,5 @@ export async function DELETE(request: NextRequest) {
     );
   } finally {
     await prisma.$disconnect();
-    console.log('[INFO] Prisma disconnected');
   }
 }

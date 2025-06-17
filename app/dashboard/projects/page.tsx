@@ -478,7 +478,6 @@ const ProjectPage: React.FC = () => {
         case 'noise-removal':
           setProcessingProgress({ tool: selectedTool, stage: 'Removing noise', percentage: 60 });
           
-          console.log('Starting noise removal processing...');
           
           // Create a timeout promise that rejects after 5 minutes
           const noiseRemovalTimeout = new Promise((_, reject) => {
@@ -492,7 +491,6 @@ const ProjectPage: React.FC = () => {
               noiseRemovalTimeout
             ]) as Blob;
             
-            console.log('Noise removal API completed, result:', processedResult);
           } catch (apiError) {
             console.error('Noise removal API error:', apiError);
             throw apiError;
@@ -512,19 +510,14 @@ const ProjectPage: React.FC = () => {
           }
           
           // Log successful processing
-          console.log('Noise removal validation passed:', {
-            size: processedResult.size,
-            type: processedResult.type
-          });
+         
           
           successMessage = `${enhancementOptions.noiseLevel} level noise reduction completed successfully`;
           break;
           
         case 'voice-enhance':
           setProcessingProgress({ tool: selectedTool, stage: 'Enhancing voice', percentage: 60 });
-          
-          console.log('Starting voice enhancement processing...');
-          
+                   
           // Create a timeout promise that rejects after 5 minutes
           const voiceEnhanceTimeout = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Voice enhancement timed out after 5 minutes')), 5 * 60 * 1000);
@@ -537,7 +530,6 @@ const ProjectPage: React.FC = () => {
               voiceEnhanceTimeout
             ]) as Blob;
             
-            console.log('Voice enhancement API completed, result:', processedResult);
           } catch (apiError) {
             console.error('Voice enhancement API error:', apiError);
             throw apiError;
@@ -562,18 +554,12 @@ const ProjectPage: React.FC = () => {
             // Don't throw here, as the server might return audio without proper content-type
           }
           
-          console.log('Voice enhancement validation passed:', {
-            size: processedResult.size,
-            type: processedResult.type
-          });
-          
           successMessage = `${enhancementOptions.voiceLevel} level enhancement for ${enhancementOptions.voiceType} completed successfully`;
           break;
           
         case 'auto-captions':
           setProcessingProgress({ tool: selectedTool, stage: 'Generating captions', percentage: 60 });
           
-          console.log('Starting caption generation...');
           
           // Create a timeout promise that rejects after 3 minutes
           const captionsTimeout = new Promise((_, reject) => {
@@ -587,7 +573,6 @@ const ProjectPage: React.FC = () => {
               captionsTimeout
             ]) as Caption[];
             
-            console.log('Caption generation completed, result:', processedResult);
           } catch (apiError) {
             console.error('Caption generation API error:', apiError);
             throw apiError;
@@ -605,10 +590,6 @@ const ProjectPage: React.FC = () => {
           if (processedResult.length === 0) {
             throw new Error('Caption generation failed - no captions generated');
           }
-          
-          console.log('Caption generation validation passed:', {
-            captionCount: processedResult.length
-          });
           
           successMessage = `Generated ${processedResult.length} caption segments successfully`;
           break;
@@ -900,7 +881,6 @@ const ProjectPage: React.FC = () => {
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.slice(6));
-                console.log('SSE data:', data); // Debug log
                 
                 if (data.type === 'progress') {
                   setExportProgress({

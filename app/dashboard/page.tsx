@@ -187,7 +187,6 @@ export default function RecordingDashboard() {
         }
       } catch (sessionError: any) {
         if (sessionError.response?.status === 404) {
-          console.log('No sessions found for user');
           setSessions([]);
           saveToCache([], userId);
         } else {

@@ -9,20 +9,17 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
-  console.log('[USER-SESSIONS] Starting request for userId:', params.userId);
   
   try {
     // Validate userId
     const userId = parseInt(params.userId);
     if (isNaN(userId)) {
-      console.error('[USER-SESSIONS] Invalid userId:', params.userId);
       return NextResponse.json(
         { success: false, error: 'Invalid user ID' },
         { status: 400 }
       );
     }
 
-    console.log('[USER-SESSIONS] Fetching sessions for userId:', userId);
 
     // First, check if user exists
     const userExists = await prisma.user.findUnique({
@@ -30,7 +27,6 @@ export async function GET(
     });
 
     if (!userExists) {
-      console.log('[USER-SESSIONS] User not found:', userId);
       return NextResponse.json({
         success: true,
         sessions: []
@@ -59,7 +55,6 @@ export async function GET(
       orderBy: { startTime: 'desc' }
     });
 
-    console.log('[USER-SESSIONS] Found sessions:', sessions.length);
 
     // Map the response
     const response = {
@@ -81,7 +76,6 @@ export async function GET(
       }))
     };
 
-    console.log('[USER-SESSIONS] Sending response with', response.sessions.length, 'sessions');
     return NextResponse.json(response);
 
   } catch (error: any) {

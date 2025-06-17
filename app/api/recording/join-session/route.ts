@@ -6,30 +6,25 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[START] Handling POST /api/recording/join-session');
 
     const body = await request.json();
     const { sessionKey, sessionId, userId, username } = body;
 
-    console.log('[REQUEST BODY]', body);
 
     // Find the session by sessionId or sessionKey
     let session;
     
     if (sessionId) {
       // If sessionId is provided (from broadcast), use it directly
-      console.log(`[FIND] Looking for session by ID: ${sessionId}`);
       session = await prisma.recordingSession.findUnique({
         where: { id: sessionId }
       });
     } else if (sessionKey) {
       // Fallback to sessionKey if sessionId not provided
-      console.log(`[FIND] Looking for session by key: ${sessionKey}`);
       session = await prisma.recordingSession.findUnique({
         where: { sessionKey }
       });
     } else {
-      console.log('[ERROR] No sessionId or sessionKey provided');
       return NextResponse.json(
         { success: false, error: 'Session ID or key required' },
         { status: 400 }
@@ -37,18 +32,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!session) {
-      console.log('[ERROR] Session not found');
       return NextResponse.json(
         { success: false, error: 'Session not found' },
         { status: 404 }
       );
     }
 
-    console.log('[FOUND] Session:', session);
 
     // Check if session is still active
     if (session.status === 'COMPLETED') {
-      console.log('[ERROR] Session already completed');
       return NextResponse.json(
         { success: false, error: 'Session has already ended' },
         { status: 400 }
@@ -56,7 +48,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Add or update participant in session
-    console.log(`[UPSERT] Adding/updating participant: ${userId} (${username}) in session ${session.id}`);
     
     const participant = await prisma.sessionParticipant.upsert({
       where: {
@@ -78,21 +69,17 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('[PARTICIPANT] Added/updated:', participant);
 
     // Update session start time if this is the first time recording starts
     if (session.status === 'ACTIVE' && !session.startTime) {
-      console.log('[UPDATE] Setting session start time');
       await prisma.recordingSession.update({
         where: { id: session.id },
         data: { 
           startTime: new Date()
         }
       });
-      console.log('[UPDATED] Session start time');
     }
 
-    console.log('[SUCCESS] Participant joined session successfully');
 
     return NextResponse.json({
       success: true,

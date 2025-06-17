@@ -6,13 +6,7 @@ export async function enhanceVoice(
   enhancementLevel: 'low' | 'medium' | 'high' = 'medium',
   voiceType: 'speech' | 'singing' | 'podcast' = 'speech',
   useBase64: boolean = true // Default to base64 for reliability
-): Promise<Blob> {
-  console.log('Starting voice enhancement with parameters:', {
-    level: enhancementLevel,
-    type: voiceType,
-    useBase64: useBase64
-  });
-  
+): Promise<Blob> {  
   try {
     // Validate input
     if (!audioBlob || audioBlob.size === 0) {
@@ -27,8 +21,7 @@ export async function enhanceVoice(
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
     const url = `${baseUrl}/api/ai/enhance-voice`;
     
-    console.log('Sending request to:', url);
-    
+   
     const headers: HeadersInit = {
       'Accept': 'audio/wav, audio/*, application/octet-stream'
     };
@@ -51,13 +44,7 @@ export async function enhanceVoice(
       });
       
       clearTimeout(timeoutId);
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', {
-        contentType: response.headers.get('content-type'),
-        contentLength: response.headers.get('content-length')
-      });
-      
+           
       // Check if response is ok
       if (!response.ok) {
         const errorText = await response.text();
@@ -74,14 +61,7 @@ export async function enhanceVoice(
       if (useBase64) {
         // Handle base64 response
         const data = await response.json();
-        
-        console.log('Received base64 response:', {
-          success: data.success,
-          audioLength: data.audio ? data.audio.length : 0,
-          size: data.size,
-          firstBytes: data.firstBytes
-        });
-        
+               
         if (!data.success || !data.audio) {
           throw new Error('Invalid response from server');
         }
@@ -104,25 +84,15 @@ export async function enhanceVoice(
         
         const enhancedBlob = new Blob([bytes], { type: data.mimeType || 'audio/wav' });
         
-        console.log('Created blob from base64:', {
-          size: enhancedBlob.size,
-          type: enhancedBlob.type
-        });
+         
         
         // Test audio playback
-        const testUrl = URL.createObjectURL(enhancedBlob);
-        console.log('Test audio URL:', testUrl);
-        
+        const testUrl = URL.createObjectURL(enhancedBlob);       
         return enhancedBlob;
         
       } else {
         // Handle binary response
         const arrayBuffer = await response.arrayBuffer();
-        
-        console.log('Received arrayBuffer:', {
-          byteLength: arrayBuffer.byteLength,
-          firstBytes: Array.from(new Uint8Array(arrayBuffer).slice(0, 10))
-        });
         
         // Validate the response
         if (!arrayBuffer || arrayBuffer.byteLength === 0) {
@@ -140,14 +110,7 @@ export async function enhanceVoice(
         }
         
         // Create blob from arrayBuffer
-        const enhancedBlob = new Blob([arrayBuffer], { type: 'audio/wav' });
-        
-        console.log('Created blob:', {
-          size: enhancedBlob.size,
-          type: enhancedBlob.type
-        });
-        
-        console.log('Voice enhancement completed successfully');
+        const enhancedBlob = new Blob([arrayBuffer], { type: 'audio/wav' });        
         return enhancedBlob;
       }
       
@@ -165,7 +128,6 @@ export async function enhanceVoice(
     
     // Attempt client-side fallback
     try {
-      console.log('Attempting client-side voice enhancement fallback...');
       return await enhanceVoiceClientSide(audioBlob, enhancementLevel, voiceType);
     } catch (fallbackError) {
       console.error('Client-side fallback also failed:', fallbackError);

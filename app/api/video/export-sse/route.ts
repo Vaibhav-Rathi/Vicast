@@ -132,7 +132,6 @@ async function processVideo(
     let captionsApplied = false;
     if (captions && effects.includes('auto-captions')) {
       try {
-        console.log('Processing captions:', captions.length);
         
         // Build filter complex for captions
         const filters: string[] = [];
@@ -173,7 +172,6 @@ async function processVideo(
           // Join all filters with comma
           ffmpegArgs.push('-vf', filters.join(','));
           captionsApplied = true;
-          console.log(`Applied ${filters.length} caption filters`);
           
           if (captionsToProcess.length < captions.length) {
             console.warn(`Note: Only first ${maxCaptions} captions were processed`);
@@ -219,7 +217,6 @@ async function processVideo(
       percentage: 35 
     })}\n\n`));
     
-    console.log('FFmpeg command:', 'ffmpeg', ffmpegArgs.join(' '));
     
     // Execute FFmpeg
     await new Promise<void>((resolve, reject) => {
@@ -239,9 +236,7 @@ async function processVideo(
           }
         }
       }
-      
-      console.log('Using FFmpeg command:', ffmpegCommand);
-      
+          
       const ffmpeg = spawn(ffmpegCommand, ffmpegArgs, {
         windowsHide: true,
         shell: false,
@@ -291,7 +286,6 @@ async function processVideo(
         if (output.includes('error') || output.includes('Error')) {
           console.error('FFmpeg error:', output);
         } else {
-          console.log('FFmpeg:', output);
         }
         
         if (duration === 0 && output.includes('Duration:')) {
@@ -307,7 +301,6 @@ async function processVideo(
           console.error('FFmpeg failed with output:', errorOutput);
           reject(new Error(`FFmpeg exited with code ${code}`));
         } else {
-          console.log('FFmpeg completed successfully');
           resolve();
         }
       });

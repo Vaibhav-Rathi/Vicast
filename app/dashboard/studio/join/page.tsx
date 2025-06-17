@@ -122,7 +122,6 @@ class RecordingManager {
       }, 30000); // 30 seconds
 
     } catch (error) {
-      console.error('Error starting recording:', error);
       this.onError('Failed to start recording: ' + (error as Error).message);
     }
   }
@@ -135,7 +134,6 @@ class RecordingManager {
     
     // Check if MediaRecorder is in recording state
     if (currentState !== 'recording') {
-      console.log('MediaRecorder not in recording state:', currentState);
       return;
     }
 
@@ -160,7 +158,6 @@ class RecordingManager {
         }
       }
     } catch (error) {
-      console.error('Error creating chunk:', error);
       this.onError('Failed to create recording chunk');
     }
   }
@@ -181,7 +178,6 @@ class RecordingManager {
       const duration = Math.round((currentTime - this.chunkStartTime) / 1000); // Convert to seconds
       this.lastChunkTime = currentTime;
 
-      console.log(`Uploading chunk ${this.chunkNumber} with duration: ${duration}s`);
 
       // Create FormData for upload
       const formData = new FormData();
@@ -205,7 +201,6 @@ class RecordingManager {
 
       if ((response.data as any).success) {
         this.onStatusChange(`Chunk ${this.chunkNumber} uploaded successfully`);
-        console.log(`Chunk ${this.chunkNumber} uploaded:`, response.data);
       } else {
         throw new Error('Upload failed');
       }
@@ -214,7 +209,6 @@ class RecordingManager {
       this.recordedChunks = [];
 
     } catch (error) {
-      console.error('Error uploading chunk:', error);
       this.onError(`Failed to upload chunk ${this.chunkNumber}`);
     }
   }
@@ -269,7 +263,7 @@ class RecordingManager {
             participantId: this.participantId
           });
         } catch (error) {
-          console.error('Error finalizing participant recording:', error);
+          // Error finalizing participant recording
         }
       }
 
@@ -280,7 +274,6 @@ class RecordingManager {
       this.recordedChunks = [];
 
     } catch (error) {
-      console.error('Error stopping recording:', error);
       this.onError('Failed to stop recording');
     }
   }
@@ -337,13 +330,9 @@ function RecordingStateManager({
       try {
         const decoder = new TextDecoder();
         const message = JSON.parse(decoder.decode(payload));
-        console.log('[RecordingStateManager] Received message:', message);
         
         if (message.type === 'RECORDING_COMMAND') {
           if (message.action === 'START' && message.sessionId) {
-            console.log('[RecordingStateManager] Starting recording with sessionId:', message.sessionId);
-            console.log('[RecordingStateManager] Current recording state:', isRecordingRef.current);
-            
             // Don't start if already recording
             if (!isRecordingRef.current && recordingManagerRef.current) {
               isRecordingRef.current = true;
@@ -351,7 +340,6 @@ function RecordingStateManager({
               
               try {
                 // Participant joining existing session
-                console.log('[RecordingStateManager - Participant] Joining session:', message.sessionId);
                 const response = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/recording/join-session`, {
                   userId: currentUserIdRef.current,
                   username: usernameRef.current,
@@ -364,7 +352,6 @@ function RecordingStateManager({
                     sessionId: (response.data as any).session.id,
                     participantId: (response.data as any).session.participantId
                   };
-                  console.log('[RecordingStateManager - Participant] Joined session:', sessionDetails);
                   
                   sessionDetailsRef.current = sessionDetails;
                   onSessionDetails(sessionDetails);
@@ -376,21 +363,16 @@ function RecordingStateManager({
                     currentUserIdRef.current
                   );
                   
-                  console.log('[RecordingStateManager] Recording started successfully');
                 } else {
                   throw new Error('Failed to join session');
                 }
               } catch (error) {
-                console.error('[RecordingStateManager] Error starting recording:', error);
                 isRecordingRef.current = false;
                 setIsRecordingActive(false);
                 setRecordingError('Failed to start recording');
               }
             }
           } else if (message.action === 'STOP') {
-            console.log('[RecordingStateManager] Stopping recording...');
-            console.log('[RecordingStateManager] Current recording state:', isRecordingRef.current);
-            
             // Stop recording if active
             if (isRecordingRef.current && recordingManagerRef.current) {
               isRecordingRef.current = false;
@@ -398,24 +380,20 @@ function RecordingStateManager({
               
               try {
                 await recordingManagerRef.current.stopRecording();
-                console.log('[RecordingStateManager] Recording stopped successfully');
               } catch (error) {
-                console.error('[RecordingStateManager] Error stopping recording:', error);
                 setRecordingError('Failed to stop recording');
               }
             }
           }
         }
       } catch (error) {
-        console.error('[RecordingStateManager] Error handling data message:', error);
+        // Error handling data message
       }
     };
 
     room.on(RoomEvent.DataReceived, handleDataReceived);
-    console.log('[RecordingStateManager] Event listener attached');
 
     return () => {
-      console.log('[RecordingStateManager] Cleaning up...');
       room.off(RoomEvent.DataReceived, handleDataReceived);
       
       // Cleanup on unmount
@@ -427,7 +405,6 @@ function RecordingStateManager({
 
   const handleStartRecording = async (sessionId?: string) => {
     if (isRecordingRef.current || !recordingManagerRef.current) {
-      console.log('[RecordingStateManager] Already recording or no manager');
       return;
     }
 
@@ -472,11 +449,9 @@ function RecordingStateManager({
           }));
           
           await room.localParticipant.publishData(data, { reliable: true });
-          console.log('[RecordingStateManager - Creator] Start command broadcasted');
         }
       }
     } catch (error) {
-      console.error('[RecordingStateManager] Error starting recording:', error);
       isRecordingRef.current = false;
       setIsRecordingActive(false);
       setRecordingError('Failed to start recording');
@@ -485,13 +460,10 @@ function RecordingStateManager({
 
   const handleStopRecording = async () => {
     if (!isRecordingRef.current || !recordingManagerRef.current) {
-      console.log('[RecordingStateManager] Not recording or no manager');
       return;
     }
 
     try {
-      console.log('[RecordingStateManager] Stopping recording...');
-      
       if (isCreator) {
         // Broadcast stop command first
         const encoder = new TextEncoder();
@@ -503,7 +475,6 @@ function RecordingStateManager({
         }));
         
         await room.localParticipant.publishData(data, { reliable: true });
-        console.log('[RecordingStateManager - Creator] Stop command broadcasted');
         
         // Give participants time to receive the message
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -513,7 +484,6 @@ function RecordingStateManager({
       isRecordingRef.current = false;
       setIsRecordingActive(false);
       await recordingManagerRef.current.stopRecording();
-      console.log('[RecordingStateManager] Recording stopped');
       
       if (isCreator && sessionDetailsRef.current) {
         // Finalize the entire session
@@ -522,13 +492,11 @@ function RecordingStateManager({
             sessionId: sessionDetailsRef.current.sessionId,
             participantId: sessionDetailsRef.current.participantId
           });
-          console.log('[RecordingStateManager - Creator] Session finalized:', response.data);
         } catch (error: any) {
-          console.error('[RecordingStateManager - Creator] Error finalizing session:', error.response?.data || error);
+          // Error finalizing session
         }
       }
     } catch (error) {
-      console.error('[RecordingStateManager] Error stopping recording:', error);
       setRecordingError('Failed to stop recording');
     }
   };
@@ -832,7 +800,7 @@ export default function JoinPodcastPage() {
           });
           setCurrentUserId((response.data as any).id);
         } catch (error) {
-          console.error('Error fetching user ID:', error);
+          // Error fetching user ID
         }
       }
     };
@@ -855,7 +823,6 @@ export default function JoinPodcastPage() {
       const creatorUserId = (response.data as any).userId;
       setIsCreator(currentUserId === creatorUserId);
     } catch (error) {
-      console.error('Error checking creator status:', error);
       setIsCreator(false);
     } finally {
       setIsCheckingCreator(false);
@@ -881,7 +848,6 @@ export default function JoinPodcastPage() {
       setToken((response.data as any).token);
       setIsJoined(true);
     } catch (error) {
-      console.error('Error getting token:', error);
       toast({
             title: "Room Error",
             description: "Failed to join room. Please try again.",
