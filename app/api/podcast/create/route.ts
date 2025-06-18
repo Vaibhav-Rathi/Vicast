@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({podcast:podcast}, {status:201})
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(err);
     return NextResponse.json({ error: 'Internal Server Error' }, {status:500});
   }

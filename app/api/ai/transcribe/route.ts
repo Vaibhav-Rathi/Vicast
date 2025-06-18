@@ -67,15 +67,18 @@ interface TranscriptionResponse {
 }
 
 // Helper function to extract error message
-function getErrorMessage(error: any): string {
-  if (error.response?.data?.error?.message) {
-    return error.response.data.error.message;
-  }
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  if (error.message) {
-    return error.message;
+function getErrorMessage(error: unknown): string {
+  if (error && typeof error === 'object') {
+    const errorObj = error as Record<string, any>;
+    if (errorObj.response?.data?.error?.message) {
+      return errorObj.response.data.error.message;
+    }
+    if (errorObj.response?.data?.message) {
+      return errorObj.response.data.message;
+    }
+    if (errorObj.message) {
+      return errorObj.message;
+    }
   }
   return 'Unknown error occurred';
 }

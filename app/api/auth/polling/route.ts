@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-
 export async function POST(req: NextRequest) {
     const data = await req.json();
     const email = data.email
@@ -23,10 +22,9 @@ export async function POST(req: NextRequest) {
         if (user.verified){
             return NextResponse.json({firstName: user.firstName, lastName : user.lastName, email: user.email},{status : 200})
         }
-        return false;
+        return NextResponse.json({message: "User not verified"}, {status: 202});
     }catch(err){
         console.log(err);
-        return NextResponse.json({message: "Error while polling"}, {status:401})   
+        return NextResponse.json({message: "Error while polling"}, {status:500})   
     }
-
 }

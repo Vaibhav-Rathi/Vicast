@@ -7,12 +7,13 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   
   try {
     // Validate userId
-    const userId = parseInt(params.userId);
+    const { userId: userIdString } = await params;
+    const userId = parseInt(userIdString);
     if (isNaN(userId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid user ID' },

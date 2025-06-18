@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify JWT token
-    let decodedToken: any;
-    try {
-      decodedToken = jwt.verify(token, process.env.JWT_SECRET!);
-    } catch (error) {
+    let decodedToken: jwt.JwtPayload & { email: string };
+      try {
+        decodedToken = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload & { email: string };
+      } catch (_error) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -134,10 +134,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify JWT token
-    let decodedToken: any;
-    try {
-      decodedToken = jwt.verify(token, process.env.JWT_SECRET!);
-    } catch (error) {
+    let decodedToken: jwt.JwtPayload & { email: string };
+      try {
+        decodedToken = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload & { email: string };
+      } catch (_error) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }

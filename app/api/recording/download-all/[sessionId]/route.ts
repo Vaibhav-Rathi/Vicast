@@ -15,16 +15,17 @@ const s3Client = new S3Client({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const {sessionId} = await params;
     const { searchParams } = new URL(request.url);
     const userId = parseInt(searchParams.get('userId') || '0');
 
     // Verify access
     const participant = await prisma.sessionParticipant.findFirst({
       where: {
-        sessionId: params.sessionId,
+        sessionId: sessionId,
         userId
       }
     });
@@ -38,7 +39,7 @@ export async function GET(
 
     // Get all chunks for the session
     const chunks = await prisma.recordingChunk.findMany({
-      where: { sessionId: params.sessionId },
+      where: { sessionId: sessionId },
       include: {
         participant: {
           select: { username: true }

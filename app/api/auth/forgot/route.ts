@@ -1,7 +1,6 @@
 // /api/auth/forgot
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from 'bcrypt'
-import { transporter } from '../signup/route'
+import { transporter } from '@/lib/transporter'
 import jwt from 'jsonwebtoken'
 import { prisma } from "@/lib/prisma";
 
@@ -16,7 +15,7 @@ export async function POST(req:NextRequest) {
         return NextResponse.json({message : "Invalid Email"}, {status:401})
     }
     const token = jwt.sign({email}, process.env.JWT_SECRET as string)
-    const info = await transporter.sendMail({
+    await transporter.sendMail({
         from: process.env.EMAIL,
         to: email,
         subject: "Password Reset",

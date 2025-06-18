@@ -3,6 +3,13 @@ import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import axios from 'axios'
 
+interface GoogleUser {
+  email: string;
+  name?: string;
+  picture?: string;
+  id?: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { access_token } = await req.json()
@@ -16,7 +23,7 @@ export async function POST(req: NextRequest) {
       `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
     )
 
-    const googleUser = googleResponse.data as any
+    const googleUser = googleResponse.data as GoogleUser
 
     if (!googleUser.email) {
       return NextResponse.json({ message: 'Failed to get user email from Google' }, { status: 400 })
@@ -46,7 +53,7 @@ export async function POST(req: NextRequest) {
       { expiresIn: '24h' }
     )
 
-    const { password: _, ...safeUser } = user
+    const { password: _password, ...safeUser } = user
 
     return NextResponse.json({
       message: 'Google signin successful',

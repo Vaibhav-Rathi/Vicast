@@ -2,6 +2,7 @@
 import React from 'react';
 import { Video, ArrowLeft, Users, Zap, Heart, Target, Award, Globe } from "lucide-react";
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function AboutPage() {
     const router = useRouter()
@@ -51,7 +52,7 @@ export default function AboutPage() {
     {
       icon: <Globe className="h-6 w-6" />,
       title: "Accessibility",
-      description: "Professional video production shouldn't require expensive equipment or technical expertise. We make it simple."
+      description: "Professional video production shouldn&apos;t require expensive equipment or technical expertise. We make it simple."
     }
   ];
 
@@ -167,7 +168,7 @@ export default function AboutPage() {
                   Today, Vicast serves thousands of podcasters, content creators, educators, and businesses who rely on our platform to produce professional-quality video content. From solo podcasters to large-scale webinars, our technology adapts to meet creators where they are.
                 </p>
                 <p>
-                  We're just getting started. Our vision extends far beyond video calls – we're building the future of content creation, where anyone with a story to tell can share it with the world in the highest quality possible.
+                  We&apos;re just getting started. Our vision extends far beyond video calls – we&apos;re building the future of content creation, where anyone with a story to tell can share it with the world in the highest quality possible.
                 </p>
               </div>
             </div>
@@ -181,10 +182,11 @@ export default function AboutPage() {
                 {teamMembers.map((member, index) => (
                   <div key={index} className="text-center">
                     <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden bg-muted">
-                      <img
+                      <Image
                         src={member.image}
                         alt={member.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     </div>
                     <h3 className="text-xl font-semibold mb-1">{member.name}</h3>

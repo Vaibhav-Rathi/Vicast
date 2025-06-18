@@ -4,6 +4,15 @@ import jwt from 'jsonwebtoken'
 import axios from 'axios'
 import bcrypt from 'bcrypt'
 
+interface GoogleUser {
+  email: string;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+  picture?: string;
+  id?: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { access_token } = await req.json()
@@ -17,7 +26,7 @@ export async function POST(req: NextRequest) {
       `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${access_token}`
     )
 
-    const googleUser = googleResponse.data as any
+    const googleUser = googleResponse.data as GoogleUser
 
     if (!googleUser.email) {
       return NextResponse.json({ message: 'Failed to get user email from Google' }, { status: 400 })
@@ -36,7 +45,7 @@ export async function POST(req: NextRequest) {
         { expiresIn: '24h' }
       )
 
-      const { password: _, ...safeUser } = existingUser
+      const { password: _password, ...safeUser } = existingUser
 
       return NextResponse.json({
         message: 'User already exists, signed in successfully',
@@ -66,7 +75,7 @@ export async function POST(req: NextRequest) {
       { expiresIn: '24h' }
     )
 
-    const { password: _, ...safeUser } = newUser
+    const { password: _password, ...safeUser } = newUser
 
     return NextResponse.json({
       message: 'Google signup successful',

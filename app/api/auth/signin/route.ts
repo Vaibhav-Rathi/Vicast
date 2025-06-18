@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET as string, { expiresIn: '24h' })
 
-    const { password: _, ...safeUser } = user;
+    const { password: __, ...safeUser } = user;
     return NextResponse.json({ message: 'Signin successful', user:safeUser, token  }, { status: 200 })
 
   } catch (err) {

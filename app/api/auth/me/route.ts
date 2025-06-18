@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const result = await authenticate(req);
 
   if ("user" in result) {
-    const { password, token, ...safeUser } = result.user;
+    const { ...safeUser } = result.user;
     return Response.json({ user: safeUser });
   } else {
     return result;

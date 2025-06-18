@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ message: 'Invalid or expired token' }, { status: 404 })
     }
-    const { password: _, ...safeUser } = user;
+    const { password: __, ...safeUser } = user;
     if (user.verified) {
       return NextResponse.json({ message: 'Email is already verified', user:safeUser}, { status: 201 })
     }

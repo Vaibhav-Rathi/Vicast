@@ -5,19 +5,10 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
-import nodemailer from 'nodemailer'
+import { transporter } from '@/lib/transporter';
 
 dotenv.config();
 
-export const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, 
-    auth: {
-      user: process.env.EMAIL,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
 
 export async function POST(req:NextRequest){
     const body = await req.json();  
@@ -37,7 +28,7 @@ export async function POST(req:NextRequest){
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL
     
     try {
-        const createdUser = await prisma.user.create({
+        await prisma.user.create({
             data : {
                 firstName,
                 lastName : lastName || undefined,
@@ -46,7 +37,7 @@ export async function POST(req:NextRequest){
                 token,
             }
         })
-        const info = await transporter.sendMail({
+        await transporter.sendMail({
             from: process.env.EMAIL,
             to: email,
             subject: "Email Verification",

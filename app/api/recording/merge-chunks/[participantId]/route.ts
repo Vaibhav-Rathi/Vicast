@@ -97,9 +97,10 @@ async function mergeWebMWithFFmpeg(chunkPaths: string[], outputPath: string): Pr
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { participantId: string } }
+  { params }: { params: Promise<{ participantId: string }> }
 ) {
   try {
+    const {participantId} = await params;
     const { searchParams } = new URL(request.url);
     const userId = parseInt(searchParams.get('userId') || '0');
     const format = searchParams.get('format') || 'url'; // 'url' or 'download'
@@ -107,7 +108,7 @@ export async function GET(
     // Verify access
     const participant = await prisma.sessionParticipant.findFirst({
       where: {
-        id: params.participantId,
+        id: participantId,
         session: {
           participants: {
             some: { userId }
@@ -127,7 +128,7 @@ export async function GET(
     }
 
     // Check if merged video already exists with proper duration
-    const mergedKey = `recordings/${participant.sessionId}/${params.participantId}/merged_recording_fixed.webm`;
+    const mergedKey = `recordings/${participant.sessionId}/${participantId}/merged_recording_fixed.webm`;
     
     const mergedExists = await checkS3ObjectExists(process.env.AWS_S3_BUCKET_NAME!, mergedKey);
     
@@ -144,7 +145,7 @@ export async function GET(
       
       // Get total duration from chunks
       const chunks = await prisma.recordingChunk.findMany({
-        where: { participantId: params.participantId },
+        where: { participantId: participantId },
         orderBy: { chunkNumber: 'asc' }
       });
       
@@ -163,7 +164,7 @@ export async function GET(
 
     // Get all chunks for this participant
     const chunks = await prisma.recordingChunk.findMany({
-      where: { participantId: params.participantId },
+      where: { participantId: participantId },
       orderBy: { chunkNumber: 'asc' }
     });
 
@@ -206,7 +207,7 @@ export async function GET(
     }
 
     // For server-side merging with FFmpeg (if available)
-    const tempDir = path.join(os.tmpdir(), `merge-${params.participantId}-${Date.now()}`);
+    const tempDir = path.join(os.tmpdir(), `merge-${participantId}-${Date.now()}`);
     
     try {
       // Create temp directory
@@ -251,7 +252,7 @@ export async function GET(
         Body: mergedBuffer,
         ContentType: 'video/webm',
         Metadata: {
-          participantId: params.participantId,
+          participantId: participantId,
           sessionId: participant.sessionId,
           totalChunks: chunks.length.toString(),
           totalDuration: totalDuration.toString(),
@@ -308,15 +309,16 @@ export async function GET(
 // POST endpoint for forcing re-merge with FFmpeg
 export async function POST(
   request: NextRequest,
-  { params }: { params: { participantId: string } }
+  { params }: { params: Promise<{ participantId: string }> }
 ) {
   try {
+    const {participantId} = await params;
     const { userId, forceFFmpeg = false } = await request.json();
     
     // Verify access
     const participant = await prisma.sessionParticipant.findFirst({
       where: {
-        id: params.participantId,
+        id: participantId,
         session: {
           participants: {
             some: { userId }
@@ -333,7 +335,7 @@ export async function POST(
     }
 
     // Delete existing merged file to force re-merge
-    const mergedKey = `recordings/${participant.sessionId}/${params.participantId}/merged_recording_fixed.webm`;
+    const mergedKey = `recordings/${participant.sessionId}/${participantId}/merged_recording_fixed.webm`;
     
     try {
       await s3Client.send(new DeleteObjectCommand({
@@ -345,7 +347,7 @@ export async function POST(
     }
 
     // Now call GET to trigger re-merge
-    return GET(request, { params });
+    return GET(request, { params: Promise.resolve({ participantId }) });
 
   } catch (error) {
     console.error('Force merge error:', error);

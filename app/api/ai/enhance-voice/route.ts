@@ -5,6 +5,9 @@ import { writeFileSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
+type EnhancementLevel = 'low' | 'medium' | 'high';
+type VoiceType = 'speech' | 'singing' | 'podcast';
+
 export async function POST(request: NextRequest) {
   
   let inputPath: string | null = null;
@@ -39,7 +42,7 @@ export async function POST(request: NextRequest) {
     writeFileSync(inputPath, buffer);
     
     // Method 1: Using FFmpeg with voice enhancement filters
-    const enhancedAudio = await enhanceWithFFmpeg(inputPath, outputPath, enhancementLevel as any, voiceType as any);
+    const enhancedAudio = await enhanceWithFFmpeg(inputPath, outputPath, enhancementLevel as EnhancementLevel, voiceType as VoiceType);
     
     if (enhancedAudio) {
       // Check if client wants base64 response
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
     
     // Method 2: Fallback to SoX enhancement
     try {
-      const soxEnhanced = await enhanceWithSoX(inputPath, outputPath, enhancementLevel as any, voiceType as any);
+      const soxEnhanced = await enhanceWithSoX(inputPath, outputPath, enhancementLevel as EnhancementLevel, voiceType as VoiceType);
       if (soxEnhanced) {
         // Check if client wants base64 response
         const wantsBase64 = request.headers.get('X-Response-Format') === 'base64';
@@ -103,12 +106,12 @@ export async function POST(request: NextRequest) {
           }
         });
       }
-    } catch (soxError) {
+    } catch (_soxError) {
       // SoX enhancement failed, continue to basic fallback
     }
     
     // Method 3: Basic voice enhancement fallback
-    const basicEnhanced = await basicVoiceEnhancement(buffer, enhancementLevel as any, voiceType as any);
+    const basicEnhanced = await basicVoiceEnhancement(buffer, enhancementLevel as EnhancementLevel, voiceType as VoiceType);
     
     // Check if client wants base64 response
     const wantsBase64 = request.headers.get('X-Response-Format') === 'base64';
@@ -149,7 +152,7 @@ export async function POST(request: NextRequest) {
       if (outputPath) {
         unlinkSync(outputPath);
       }
-    } catch (cleanupError) {
+    } catch (_cleanupError) {
       // Cleanup error ignored
     }
   }
@@ -158,13 +161,13 @@ export async function POST(request: NextRequest) {
 async function enhanceWithFFmpeg(
   inputPath: string, 
   outputPath: string, 
-  enhancementLevel: string, 
-  voiceType: string
+  enhancementLevel: EnhancementLevel, 
+  voiceType: VoiceType
 ): Promise<Buffer | null> {
   return new Promise((resolve) => {
     // Check if ffmpeg is available
     const testFFmpeg = spawn('ffmpeg', ['-version']);
-    testFFmpeg.on('error', (error) => {
+    testFFmpeg.on('error', (_error) => {
       resolve(null);
     });
     
@@ -241,15 +244,15 @@ async function enhanceWithFFmpeg(
       
       const ffmpeg = spawn('ffmpeg', ffmpegArgs);
       
-      let stderr = '';
-      let stdout = '';
+      let _stderr = '';
+      let _stdout = '';
       
       ffmpeg.stdout.on('data', (data) => {
-        stdout += data.toString();
+        _stdout += data.toString();
       });
       
       ffmpeg.stderr.on('data', (data) => {
-        stderr += data.toString();
+        _stderr += data.toString();
       });
       
       ffmpeg.on('close', (code) => {
@@ -257,7 +260,7 @@ async function enhanceWithFFmpeg(
           try {
             const outputBuffer = readFileSync(outputPath);
             resolve(outputBuffer);
-          } catch (readError) {
+          } catch (_readError) {
             resolve(null);
           }
         } else {
@@ -265,7 +268,7 @@ async function enhanceWithFFmpeg(
         }
       });
       
-      ffmpeg.on('error', (error) => {
+      ffmpeg.on('error', (_error) => {
         resolve(null);
       });
     });
@@ -275,12 +278,12 @@ async function enhanceWithFFmpeg(
 async function enhanceWithSoX(
   inputPath: string, 
   outputPath: string, 
-  enhancementLevel: string, 
-  voiceType: string
+  enhancementLevel: EnhancementLevel, 
+  voiceType: VoiceType
 ): Promise<Buffer | null> {
   return new Promise((resolve) => {
     // SoX command for voice enhancement
-    let soxArgs: string[] = [inputPath, outputPath];
+    const soxArgs: string[] = [inputPath, outputPath];
     
     // Base processing
     soxArgs.push('highpass', '80'); // Remove low-frequency noise
@@ -319,10 +322,10 @@ async function enhanceWithSoX(
     
     const sox = spawn('sox', soxArgs);
     
-    let stderr = '';
+    let _stderr = '';
     
     sox.stderr.on('data', (data) => {
-      stderr += data.toString();
+      _stderr += data.toString();
     });
     
     sox.on('close', (code) => {
@@ -330,7 +333,7 @@ async function enhanceWithSoX(
         try {
           const outputBuffer = readFileSync(outputPath);
           resolve(outputBuffer);
-        } catch (readError) {
+        } catch (_readError) {
           resolve(null);
         }
       } else {
@@ -338,7 +341,7 @@ async function enhanceWithSoX(
       }
     });
     
-    sox.on('error', (error) => {
+    sox.on('error', (_error) => {
       resolve(null);
     });
   });
@@ -346,8 +349,8 @@ async function enhanceWithSoX(
 
 async function basicVoiceEnhancement(
   inputBuffer: Buffer, 
-  enhancementLevel: string, 
-  voiceType: string
+  enhancementLevel: EnhancementLevel, 
+  _voiceType: VoiceType
 ): Promise<Buffer> {
   // Basic voice enhancement using digital signal processing concepts
   const sampleRate = 44100;

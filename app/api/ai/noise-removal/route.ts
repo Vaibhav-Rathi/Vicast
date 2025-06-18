@@ -5,6 +5,8 @@ import { writeFileSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
+type NoiseLevel = 'low' | 'medium' | 'high';
+
 export async function POST(request: NextRequest) {
   
   let inputPath: string | null = null;
@@ -37,20 +39,20 @@ export async function POST(request: NextRequest) {
     writeFileSync(inputPath, buffer);
     
     // Configure noise reduction parameters based on level
-    let noisereduceParams: string[];
+    let _noisereduceParams: string[];
     switch (noiseLevel) {
       case 'low':
-        noisereduceParams = ['0.21'];
+        _noisereduceParams = ['0.21'];
         break;
       case 'high':
-        noisereduceParams = ['0.8'];
+        _noisereduceParams = ['0.8'];
         break;
       default: // medium
-        noisereduceParams = ['0.5'];
+        _noisereduceParams = ['0.5'];
     }
     
     // Method 1: Using FFmpeg with built-in noise reduction filters
-    const processedAudio = await processWithFFmpeg(inputPath, outputPath, noiseLevel as any);
+    const processedAudio = await processWithFFmpeg(inputPath, outputPath, noiseLevel as NoiseLevel);
     
     if (processedAudio) {
       // Check if client wants base64 response
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest) {
     
     // Method 2: Fallback to SoX if available
     try {
-      const soxProcessed = await processWithSoX(inputPath, outputPath, noiseLevel as any);
+      const soxProcessed = await processWithSoX(inputPath, outputPath, noiseLevel as NoiseLevel);
       if (soxProcessed) {
         // Check if client wants base64 response
         const wantsBase64 = request.headers.get('X-Response-Format') === 'base64';
@@ -113,12 +115,12 @@ export async function POST(request: NextRequest) {
           }
         });
       }
-    } catch (soxError) {
+    } catch (_soxError) {
       // SoX processing failed, continue to basic fallback
     }
     
     // Method 3: Basic audio processing fallback
-    const basicProcessed = await basicNoiseReduction(buffer, noiseLevel as any);
+    const basicProcessed = await basicNoiseReduction(buffer, noiseLevel as NoiseLevel);
     
     // Check if client wants base64 response
     const wantsBase64 = request.headers.get('X-Response-Format') === 'base64';
@@ -159,17 +161,17 @@ export async function POST(request: NextRequest) {
       if (outputPath) {
         unlinkSync(outputPath);
       }
-    } catch (cleanupError) {
+    } catch (_cleanupError) {
       // Cleanup error ignored
     }
   }
 }
 
-async function processWithFFmpeg(inputPath: string, outputPath: string, noiseLevel: string): Promise<Buffer | null> {
+async function processWithFFmpeg(inputPath: string, outputPath: string, noiseLevel: NoiseLevel): Promise<Buffer | null> {
   return new Promise((resolve) => {
     // Check if ffmpeg is available
     const testFFmpeg = spawn('ffmpeg', ['-version']);
-    testFFmpeg.on('error', (error) => {
+    testFFmpeg.on('error', (_error) => {
       resolve(null);
     });
     
@@ -204,15 +206,15 @@ async function processWithFFmpeg(inputPath: string, outputPath: string, noiseLev
       
       const ffmpeg = spawn('ffmpeg', ffmpegArgs);
       
-      let stderr = '';
-      let stdout = '';
+      let _stderr = '';
+      let _stdout = '';
       
       ffmpeg.stdout.on('data', (data) => {
-        stdout += data.toString();
+        _stdout += data.toString();
       });
       
       ffmpeg.stderr.on('data', (data) => {
-        stderr += data.toString();
+        _stderr += data.toString();
       });
       
       ffmpeg.on('close', (code) => {
@@ -220,7 +222,7 @@ async function processWithFFmpeg(inputPath: string, outputPath: string, noiseLev
           try {
             const outputBuffer = readFileSync(outputPath);
             resolve(outputBuffer);
-          } catch (readError) {
+          } catch (_readError) {
             resolve(null);
           }
         } else {
@@ -228,14 +230,14 @@ async function processWithFFmpeg(inputPath: string, outputPath: string, noiseLev
         }
       });
       
-      ffmpeg.on('error', (error) => {
+      ffmpeg.on('error', (_error) => {
         resolve(null);
       });
     });
   });
 }
 
-async function processWithSoX(inputPath: string, outputPath: string, noiseLevel: string): Promise<Buffer | null> {
+async function processWithSoX(inputPath: string, outputPath: string, noiseLevel: NoiseLevel): Promise<Buffer | null> {
   return new Promise((resolve) => {
     // SoX command with noise reduction
     let soxArgs: string[];
@@ -253,10 +255,10 @@ async function processWithSoX(inputPath: string, outputPath: string, noiseLevel:
     
     const sox = spawn('sox', soxArgs);
     
-    let stderr = '';
+    let _stderr = '';
     
     sox.stderr.on('data', (data) => {
-      stderr += data.toString();
+      _stderr += data.toString();
     });
     
     sox.on('close', (code) => {
@@ -264,7 +266,7 @@ async function processWithSoX(inputPath: string, outputPath: string, noiseLevel:
         try {
           const outputBuffer = readFileSync(outputPath);
           resolve(outputBuffer);
-        } catch (readError) {
+        } catch (_readError) {
           resolve(null);
         }
       } else {
@@ -272,13 +274,13 @@ async function processWithSoX(inputPath: string, outputPath: string, noiseLevel:
       }
     });
     
-    sox.on('error', (error) => {
+    sox.on('error', (_error) => {
       resolve(null);
     });
   });
 }
 
-async function basicNoiseReduction(inputBuffer: Buffer, noiseLevel: string): Promise<Buffer> {
+async function basicNoiseReduction(inputBuffer: Buffer, noiseLevel: NoiseLevel): Promise<Buffer> {
   // Basic noise reduction using Web Audio API concepts
   // This is a simplified implementation - in practice, you'd use more sophisticated algorithms
   
