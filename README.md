@@ -106,20 +106,11 @@ A modern video streaming and conferencing platform built with Next.js, featuring
 
 ## Development
 
-1. **Start the development server**
+**Start the development server**
    ```bash
    npm run dev
    ```
    The application will be available at `http://localhost:3000`
-
-2. **Start the backend server**
-   ```bash
-   npm run server
-   ```
-
-3. **Run both frontend and backend concurrently**
-   ```bash
-   npm run dev:all
    ```
 
 ## Scripts
